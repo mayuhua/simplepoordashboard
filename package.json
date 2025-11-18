@@ -1,13 +1,17 @@
 {
-  "name": "temu-tracker",
+  "name": "simplepoordashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "homepage": "https://simplepoordashboard.onrender.com",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:render": "npm run build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:static": "npm run build && npx serve dist -p 4173",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@modelcontextprotocol/server-github": "^2025.4.8",

@@ -118,11 +118,11 @@ export class XLSXParser {
             console.log('Available columns:', Object.keys(jsonData[0] as any));
 
             // 检查关键列的数据范围
-            if ('# Press Buy' in jsonData[0]) {
+            if ('# Press Buy' in (jsonData[0] as any)) {
               const pressBuys = jsonData.map((row: any) => Number(row['# Press Buy']) || 0);
               console.log(`'# Press Buy' column - Min: ${Math.min(...pressBuys)}, Max: ${Math.max(...pressBuys)}, Sum: ${pressBuys.reduce((a, b) => a + b, 0)}`);
             }
-            if ('# Converted' in jsonData[0]) {
+            if ('# Converted' in (jsonData[0] as any)) {
               const converted = jsonData.map((row: any) => Number(row['# Converted']) || 0);
               console.log(`'# Converted' column - Min: ${Math.min(...converted)}, Max: ${Math.max(...converted)}, Sum: ${converted.reduce((a, b) => a + b, 0)}`);
             }
