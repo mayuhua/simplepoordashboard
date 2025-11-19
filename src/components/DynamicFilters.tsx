@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, X, Filter } from 'lucide-react';
 
 interface FilterOption {
@@ -12,10 +12,19 @@ interface DynamicFiltersProps {
   countries: FilterOption[];
   paymentOptions: FilterOption[];
   validPaymentOptions?: string[]; // 动态有效的Payment Options
+  rawData?: WeeklyData[]; // 原始数据用于联动过滤
   onPSPChange: (selected: string[]) => void;
   onWeekChange: (selected: string[]) => void;
   onCountryChange: (selected: string[]) => void;
   onPaymentOptionChange: (selected: string[]) => void;
+}
+
+// WeeklyData 类型定义（如果还没有导入的话）
+interface WeeklyData {
+  week: string;
+  country: string;
+  psp: string;
+  lastSelectedPaymentOption?: string;
 }
 
 const MultiSelectDropdown: React.FC<{
@@ -103,6 +112,7 @@ const DynamicFilters: React.FC<DynamicFiltersProps> = ({
   countries,
   paymentOptions,
   validPaymentOptions = [],
+  rawData = [],
   onPSPChange,
   onWeekChange,
   onCountryChange,
@@ -112,6 +122,50 @@ const DynamicFilters: React.FC<DynamicFiltersProps> = ({
   const [selectedWeeks, setSelectedWeeks] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedPaymentOptions, setSelectedPaymentOptions] = useState<string[]>([]);
+  const [dynamicValidPaymentOptions, setDynamicValidPaymentOptions] = useState<string[]>([]);
+
+  // 计算基于当前筛选器的有效支付选项
+  const calculateValidPaymentOptions = (
+    psps: string[],
+    weeks: string[],
+    countries: string[]
+  ): string[] => {
+    if (!rawData || rawData.length === 0) {
+      return [];
+    }
+
+    const validOptions = new Set<string>();
+    rawData.forEach(item => {
+      const pspMatch = psps.length === 0 || psps.includes(item.psp);
+      const weekMatch = weeks.length === 0 || weeks.includes(item.week);
+      const countryMatch = countries.length === 0 || countries.includes(item.country);
+
+      if (pspMatch && weekMatch && countryMatch && item.lastSelectedPaymentOption) {
+        validOptions.add(item.lastSelectedPaymentOption);
+      }
+    });
+
+    return [...validOptions];
+  };
+
+  // 当国家、PSP或周筛选变化时，更新有效的支付选项
+  useEffect(() => {
+    const newValidOptions = calculateValidPaymentOptions(selectedPSPs, selectedWeeks, selectedCountries);
+    setDynamicValidPaymentOptions(newValidOptions);
+
+    // 清除已选择但不再有效的支付选项
+    if (selectedPaymentOptions.length > 0) {
+      const stillValidOptions = selectedPaymentOptions.filter(option => newValidOptions.includes(option));
+      if (stillValidOptions.length !== selectedPaymentOptions.length) {
+        setSelectedPaymentOptions(stillValidOptions);
+      }
+    }
+  }, [selectedPSPs, selectedWeeks, selectedCountries, rawData]);
+
+  // 使用动态计算的有效选项或传入的有效选项
+  const effectiveValidPaymentOptions = dynamicValidPaymentOptions.length > 0
+    ? dynamicValidPaymentOptions
+    : validPaymentOptions;
 
   React.useEffect(() => {
     onPSPChange(selectedPSPs);
@@ -200,21 +254,26 @@ const DynamicFilters: React.FC<DynamicFiltersProps> = ({
         {/* Payment Option Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Payment Option ({selectedPaymentOptions.length}/{validPaymentOptions.length || paymentOptions.length})
+            Payment Option ({selectedPaymentOptions.length}/{effectiveValidPaymentOptions.length || paymentOptions.length})
           </label>
           <MultiSelectDropdown
             options={
-              validPaymentOptions.length > 0
-                ? validPaymentOptions.map(po => ({ value: po, label: po }))
+              effectiveValidPaymentOptions.length > 0
+                ? effectiveValidPaymentOptions.map(po => ({ value: po, label: po }))
                 : paymentOptions
             }
             selected={selectedPaymentOptions}
             onChange={setSelectedPaymentOptions}
-            placeholder={validPaymentOptions.length > 0 ? "Select Payment Options" : "No payment options available"}
+            placeholder={effectiveValidPaymentOptions.length > 0 ? "Select Payment Options" : "No payment options available"}
           />
-          {validPaymentOptions.length === 0 && paymentOptions.length > 0 && (
+          {effectiveValidPaymentOptions.length === 0 && paymentOptions.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">
-              Adjust other filters to see payment options
+              Select countries or other filters to see available payment options
+            </p>
+          )}
+          {effectiveValidPaymentOptions.length > 0 && (
+            <p className="text-xs text-green-600 mt-1">
+              {effectiveValidPaymentOptions.length} payment option{effectiveValidPaymentOptions.length !== 1 ? 's' : ''} available for your selection
             </p>
           )}
         </div>

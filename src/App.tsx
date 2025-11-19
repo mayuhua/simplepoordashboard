@@ -274,6 +274,7 @@ const App: React.FC = () => {
               countries={dashboardData.filterOptions.countries.map(country => ({ value: country, label: country }))}
               paymentOptions={dashboardData.filterOptions.paymentOptions.map(option => ({ value: option, label: option }))}
               validPaymentOptions={validPaymentOptions}
+              rawData={rawData}
               onPSPChange={setSelectedPSPs}
               onWeekChange={setSelectedWeeks}
               onCountryChange={setSelectedCountries}
